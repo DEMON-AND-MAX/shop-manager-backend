@@ -33,22 +33,8 @@ def app_post():
     return response
 
 ### FIREBASE ROUTES
-@app.route('/get-all-items', methods=['GET'])
-def app_get_all_items():
-    collection = "inventory"
-    data = firebase_handler.get_all_items(collection=collection)
-    if data:
-        return jsonify({
-            "message": f"Retrieved all items from {collection}: {data}", 
-            "data": data
-        }), 200
-    else:
-        return jsonify({
-            "error": f"No items found in {collection}"
-        }), 400
-
-@app.route('/add-items', methods=['POST'])
-def app_add_items():
+@app.route('/add-item', methods=['POST'])
+def app_add_item():
     data = request.json
 
     required_fields = ["collection", "item_id", "data",]
@@ -70,6 +56,95 @@ def app_add_items():
     )
 
     return jsonify({"message": f"Added {item_id} to {collection}"}), 200
+
+@app.route('/update-item', methods=['POST'])
+def app_update_item():
+    data = request.json
+
+    required_fields = ["collection", "item_id", "updates",]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return jsonify({
+            "error": "Missing required fields",
+            "missing_fields": missing_fields
+        }), 400
+    
+    collection = data["collection"]
+    item_id = data["item_id"]
+    updates = data["updates"]
+
+    firebase_handler.update_item(
+        collection=collection,
+        item_id=item_id,
+        updates=updates,
+    )
+
+    return jsonify({"message": f"Updated {item_id} in {collection}"}), 200
+
+@app.route('/delete-item', methods=['POST'])
+def app_delete_item():
+    data = request.json
+
+    required_fields = ["collection", "item_id",]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return jsonify({
+            "error": "Missing required fields",
+            "missing_fields": missing_fields
+        }), 400
+    
+    collection = data["collection"]
+    item_id = data["item_id"]
+
+    firebase_handler.delete_item(
+        collection=collection,
+        item_id=item_id,
+    )
+
+    return jsonify({"message": f"Deleted {item_id} in {collection}"}), 200
+
+@app.route('/get-item', methods=['POST'])
+def app_get_item():
+    data = request.json
+
+    required_fields = ["collection", "item_id",]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return jsonify({
+            "error": "Missing required fields",
+            "missing_fields": missing_fields
+        }), 400
+    
+    collection = data["collection"]
+    item_id = data["item_id"]
+
+    item_data = firebase_handler.get_all_items(
+        collection=collection, 
+        item_id=item_id
+    )
+    if item_data:
+        return jsonify({
+            "message": f"Retrieved {item_id} from {collection}: {data}", 
+            "data": item_data
+        }), 200
+    else:
+        return jsonify({
+            "error": f"{item_id} not found in {collection}"
+        }), 400
+
+@app.route('/get-all-items', methods=['GET'])
+def app_get_all_items():
+    collection = "inventory"
+    data = firebase_handler.get_all_items(collection=collection)
+    if data:
+        return jsonify({
+            "message": f"Retrieved all items from {collection}: {data}", 
+            "data": data
+        }), 200
+    else:
+        return jsonify({
+            "error": f"No items found in {collection}"
+        }), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
